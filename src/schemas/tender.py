@@ -1,12 +1,14 @@
 import datetime
+from typing import List
 from uuid import UUID
-from pydantic import BaseModel, ConfigDict
+from fastapi import Query
+from pydantic import BaseModel, ConfigDict, Field, conint
 
 from src.schemas.enums import TenderServiceType, TenderStatus
 
 class TenderBase(BaseModel):
-    name: str
-    description: str
+    name: str = Field(..., max_length=100)
+    description: str = Field(..., max_length=500)
     service_type: TenderServiceType
     status: TenderStatus
 
@@ -17,8 +19,6 @@ class TenderCreate(TenderBase):
 
 class TenderResponse(TenderBase):
     id: UUID
-    version: int
+    version: conint(ge=1)
     created_at: datetime.datetime
     model_config = ConfigDict(from_attributes=True)
-
-

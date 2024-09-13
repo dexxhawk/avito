@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 0d73a7b377da
+Revision ID: e752762b9502
 Revises: 4b1e38e0b792
-Create Date: 2024-09-12 21:15:35.275563
+Create Date: 2024-09-13 03:11:12.864015
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '0d73a7b377da'
+revision: str = 'e752762b9502'
 down_revision: Union[str, None] = '4b1e38e0b792'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -23,12 +23,12 @@ def upgrade() -> None:
     op.create_table('tender',
     sa.Column('id', sa.Uuid(), server_default=sa.text('uuid_generate_v4()'), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
+    sa.Column('service_type', sa.Enum('Construction', 'Delivery', 'Manufacture', name='tender_service_type'), nullable=False),
+    sa.Column('status', sa.Enum('Created', 'Published', 'Closed', name='tender_status'), nullable=False),
     sa.Column('creator_username', sa.String(length=100), nullable=False),
+    sa.Column('version', sa.Integer(), server_default=sa.text('1'), nullable=False),
     sa.Column('description', sa.Text(), nullable=True),
-    sa.Column('service_type', sa.Enum('Construction', 'Delivery', 'Manufacture', name='tender_service_type'), nullable=True),
-    sa.Column('status', sa.Enum('Created', 'Published', 'Closed', name='tender_status'), nullable=True),
     sa.Column('organization_id', sa.Uuid(), nullable=True),
-    sa.Column('version', sa.Integer(), nullable=True),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=True),
     sa.ForeignKeyConstraint(['organization_id'], ['organization.id'], name='tender_organization_id_fkey'),
     sa.PrimaryKeyConstraint('id', name='tender_pkey')
@@ -36,9 +36,9 @@ def upgrade() -> None:
     op.create_table('bid',
     sa.Column('id', sa.Uuid(), server_default=sa.text('uuid_generate_v4()'), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
+    sa.Column('status', sa.Enum('Created', 'Published', 'Canceled', 'Approved', 'Rejected', name='bid_status'), nullable=False),
     sa.Column('creator_username', sa.String(length=100), nullable=False),
     sa.Column('description', sa.Text(), nullable=True),
-    sa.Column('status', sa.Enum('Created', 'Published', 'Canceled', 'Approved', 'Rejected', name='bid_status'), nullable=True),
     sa.Column('tender_id', sa.Uuid(), nullable=True),
     sa.Column('organization_id', sa.Uuid(), nullable=True),
     sa.ForeignKeyConstraint(['organization_id'], ['organization.id'], name='bid_organization_id_fkey'),

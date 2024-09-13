@@ -67,12 +67,12 @@ class Tender(Base):
 
     id = mapped_column(Uuid, server_default=text('uuid_generate_v4()'))
     name = mapped_column(String, nullable=False)
+    service_type = mapped_column(Enum('Construction', 'Delivery', 'Manufacture', name='tender_service_type'), nullable=False)
+    status = mapped_column(Enum('Created', 'Published', 'Closed', name='tender_status'), nullable=False)
     creator_username = mapped_column(String(100), nullable=False)
+    version = mapped_column(Integer, nullable=False, server_default=text('1'))
     description = mapped_column(Text)
-    service_type = mapped_column(Enum('Construction', 'Delivery', 'Manufacture', name='tender_service_type'))
-    status = mapped_column(Enum('Created', 'Published', 'Closed', name='tender_status'))
     organization_id = mapped_column(Uuid)
-    version = mapped_column(Integer)
     created_at = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP'))
 
     organization: Mapped[Optional['Organization']] = relationship('Organization', back_populates='tender')
@@ -89,9 +89,9 @@ class Bid(Base):
 
     id = mapped_column(Uuid, server_default=text('uuid_generate_v4()'))
     name = mapped_column(String, nullable=False)
+    status = mapped_column(Enum('Created', 'Published', 'Canceled', 'Approved', 'Rejected', name='bid_status'), nullable=False)
     creator_username = mapped_column(String(100), nullable=False)
     description = mapped_column(Text)
-    status = mapped_column(Enum('Created', 'Published', 'Canceled', 'Approved', 'Rejected', name='bid_status'))
     tender_id = mapped_column(Uuid)
     organization_id = mapped_column(Uuid)
 

@@ -13,7 +13,7 @@ class DefaultSettings(BaseSettings):
     POSTGRES_DB: str = environ.get("POSTGRES_DATABASE", "tender")
     POSTGRES_HOST: str = environ.get("POSTGRES_HOST", "localhost")
     POSTGRES_USER: str = environ.get("POSTGRES_USERNAME", "postgres")
-    POSTGRES_PORT: int = int(environ.get("POSTGRES_PORT", "5432")[-4:])
+    POSTGRES_PORT: int = int(environ.get("POSTGRES_PORT", "5432"))
     POSTGRES_PASSWORD: str = environ.get("POSTGRES_PASSWORD", "postgres")
     POSTGRES_CONN: str = environ.get("POSTGRES_CONN", "")
     DB_CONNECT_RETRY: int = environ.get("DB_CONNECT_RETRY", 20)

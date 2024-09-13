@@ -19,19 +19,21 @@ class DefaultSettings(BaseSettings):
     DB_CONNECT_RETRY: int = environ.get("DB_CONNECT_RETRY", 20)
     DB_POOL_SIZE: int = environ.get("DB_POOL_SIZE", 15)
 
-    # @property
-    # def database_settings(self) -> dict:
-    #     return {
-    #         "database": self.POSTGRES_DB,
-    #         "user": self.POSTGRES_USER,
-    #         "password": self.POSTGRES_PASSWORD,
-    #         "host": self.POSTGRES_HOST,
-    #         "port": self.POSTGRES_PORT,
-    #     }
+    @property
+    def database_settings(self) -> dict:
+        return {
+            "database": self.POSTGRES_DB,
+            "user": self.POSTGRES_USER,
+            "password": self.POSTGRES_PASSWORD,
+            "host": self.POSTGRES_HOST,
+            "port": self.POSTGRES_PORT,
+        }
 
     @property
     def database_uri(self) -> str:
-        return self.POSTGRES_CONN
+        return "postgresql+asyncpg://{user}:{password}@{host}:{port}/{database}".format(
+            **self.database_settings,
+        )
 
 
 def get_settings() -> DefaultSettings:

@@ -14,8 +14,8 @@ tender_router = APIRouter(prefix="/tenders", tags=["tender"])
     "/", status_code=status.HTTP_200_OK, response_model=List[TenderResponse]
 )
 async def get_tenders(
-    limit: int,
-    offset: int,
+    limit: int = Query(None),
+    offset: int = Query(None),
     service_type: List[TenderServiceType] | None = Query(None),
     db: AsyncSession = Depends(get_session),
 ):

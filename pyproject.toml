@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "src"
+version = "0.1.0"
+description = ""
+authors = ["dexxhawk <Dsshnyakin@yandex.ru>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+sqlalchemy = "^2.0"
+alembic = "^1.13.2"
+fastapi = "^0.114.0"
+sqlacodegen-v2 = "^0.1.4"
+psycopg2 = "^2.9.9"
+pydantic-settings = "^2.4.0"
+uvicorn = "^0.30.6"
+asyncpg = "^0.29.0"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.6.4"
+pytest = "^8.3.2"
+faker = "^28.4.1"
+datamodel-code-generator = "^0.26.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

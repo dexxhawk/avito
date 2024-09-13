@@ -7,6 +7,23 @@ from sqlalchemy.orm.base import Mapped
 Base = declarative_base()
 
 
+class BidHistory(Base):
+    __tablename__ = 'bid_history'
+    __table_args__ = (
+        PrimaryKeyConstraint('id', name='bid_history_pkey'),
+    )
+
+    id = mapped_column(Uuid, server_default=text('uuid_generate_v4()'))
+    bid_id = mapped_column(Uuid, nullable=False)
+    name = mapped_column(String, nullable=False)
+    status = mapped_column(Enum('Created', 'Published', 'Canceled', 'Approved', 'Rejected', name='bid_status'), nullable=False)
+    tender_id = mapped_column(Uuid, nullable=False)
+    organization_id = mapped_column(Uuid, nullable=False)
+    creator_username = mapped_column(String(100), nullable=False)
+    version = mapped_column(Integer, nullable=False, server_default=text('1'))
+    description = mapped_column(Text)
+
+
 class Employee(Base):
     __tablename__ = 'employee'
     __table_args__ = (
@@ -40,6 +57,24 @@ class Organization(Base):
     organization_responsible: Mapped[List['OrganizationResponsible']] = relationship('OrganizationResponsible', uselist=True, back_populates='organization')
     tender: Mapped[List['Tender']] = relationship('Tender', uselist=True, back_populates='organization')
     bid: Mapped[List['Bid']] = relationship('Bid', uselist=True, back_populates='organization')
+
+
+class TenderHistory(Base):
+    __tablename__ = 'tender_history'
+    __table_args__ = (
+        PrimaryKeyConstraint('id', name='tender_history_pkey'),
+    )
+
+    id = mapped_column(Uuid, server_default=text('uuid_generate_v4()'))
+    tender_id = mapped_column(Uuid, nullable=False)
+    name = mapped_column(String, nullable=False)
+    service_type = mapped_column(Enum('Construction', 'Delivery', 'Manufacture', name='tender_service_type'), nullable=False)
+    status = mapped_column(Enum('Created', 'Published', 'Closed', name='tender_status'), nullable=False)
+    creator_username = mapped_column(String(100), nullable=False)
+    version = mapped_column(Integer, nullable=False, server_default=text('1'))
+    description = mapped_column(Text)
+    organization_id = mapped_column(Uuid)
+    created_at = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP'))
 
 
 class OrganizationResponsible(Base):
@@ -94,6 +129,24 @@ class Bid(Base):
     description = mapped_column(Text)
     tender_id = mapped_column(Uuid)
     organization_id = mapped_column(Uuid)
+    decision = mapped_column(Enum('Approved', 'Rejected', name='bid_decision'))
+    version = mapped_column(Integer, server_default=text('1'))
 
     organization: Mapped[Optional['Organization']] = relationship('Organization', back_populates='bid')
     tender: Mapped[Optional['Tender']] = relationship('Tender', back_populates='bid')
+    feedback: Mapped[List['Feedback']] = relationship('Feedback', uselist=True, back_populates='bid')
+
+
+class Feedback(Base):
+    __tablename__ = 'feedback'
+    __table_args__ = (
+        ForeignKeyConstraint(['bid_id'], ['bid.id'], ondelete='CASCADE', name='feedback_bid_id_fkey'),
+        PrimaryKeyConstraint('id', name='feedback_pkey')
+    )
+
+    id = mapped_column(Uuid, server_default=text('uuid_generate_v4()'))
+    bid_id = mapped_column(Uuid, nullable=False)
+    feedback = mapped_column(Text, nullable=False)
+    creator_username = mapped_column(String(100), nullable=False)
+
+    bid: Mapped['Bid'] = relationship('Bid', back_populates='feedback')

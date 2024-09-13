@@ -1,4 +1,4 @@
-"""empty message
+"""Add tender, bid
 
 Revision ID: e752762b9502
 Revises: 4b1e38e0b792

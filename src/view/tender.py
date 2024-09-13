@@ -17,7 +17,7 @@ async def get_tenders(limit: int, offset: int, service_type: List[TenderServiceT
 
 @tender_router.post("/new", status_code=status.HTTP_200_OK)
 async def create_tender(tender: TenderCreate, db: AsyncSession = Depends(get_session)):
-    await tenders.create_tender(db, tender)
+    return await tenders.create_tender(db, tender)
 
 @tender_router.get("/my", status_code=status.HTTP_200_OK)
 async def get_user_tenders(limit: int, offset: int, username: str, db: AsyncSession = Depends(get_session)):
@@ -30,8 +30,12 @@ async def get_tender_status(db: AsyncSession = Depends(get_session), tender_id: 
 
 @tender_router.put("/{tender_id}/status", status_code=status.HTTP_200_OK)
 async def change_tender_status(status: TenderStatus, db: AsyncSession = Depends(get_session), tender_id: str = Path(...), username: str = Query('test_user')):
-    await tenders.change_tender_status_by_id(db, tender_id, username, status)
+    return await tenders.change_tender_status_by_id(db, tender_id, username, status)
 
 @tender_router.patch("/{tender_id}/edit", status_code=status.HTTP_200_OK)
 async def edit_tender(tender: TenderUpdate, tender_id: str = Path(...), username: str = Query(...), db: AsyncSession = Depends(get_session)):
-    await tenders.edit_tender(db, tender, tender_id, username)
+    return await tenders.edit_tender(db, tender, tender_id, username)
+
+@tender_router.put("/{tender_id}/rollback/{version}", status_code=status.HTTP_200_OK, response_model=TenderResponse)
+async def rollback(tender_id: str = Path(...), version: int = Path(...), username: str = Query(...), db: AsyncSession = Depends(get_session)):
+    return await tenders.rollback(db, bid_id, version, username)

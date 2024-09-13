@@ -1,9 +1,6 @@
-import datetime
-from uuid import UUID
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 
-from src.schemas.enums import TenderServiceType, TenderStatus
+
 
 class ErrorResponseBase(BaseModel):
     reason: str | None
-

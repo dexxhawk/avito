@@ -26,104 +26,104 @@ async def get_user_bids(
 
 
 @bid_router.get(
-    "/{tender_id}/list",
+    "/{tenderId}/list",
     status_code=status.HTTP_200_OK,
     response_model=List[BidResponse],
 )
 async def get_bids_by_tender(
-    tender_id: str = Path(...),
+    tenderId: str = Path(...),
     username: str = Query(...),
     limit: int | None = Query(None),
     offset: int | None = Query(None),
     db: AsyncSession = Depends(get_session),
 ):
-    return await bids.get_bids_by_tender(db, tender_id, username, limit, offset)
+    return await bids.get_bids_by_tender(db, tenderId, username, limit, offset)
 
 
-@bid_router.get("/{bid_id}/status", status_code=status.HTTP_200_OK)
+@bid_router.get("/{bidId}/status", status_code=status.HTTP_200_OK)
 async def get_bid_status(
     db: AsyncSession = Depends(get_session),
-    bid_id: str = Path(...),
+    bidId: str = Path(...),
     username: str = Query(...),
 ):
-    bid = await bids.get_bid_by_id(db, bid_id, username)
+    bid = await bids.get_bid_by_id(db, bidId, username)
     return bid.status
 
 
 @bid_router.put(
-    "/{bid_id}/status", status_code=status.HTTP_200_OK, response_model=BidResponse
+    "/{bidId}/status", status_code=status.HTTP_200_OK, response_model=BidResponse
 )
 async def change_bid_status(
     status: BidStatus,
     db: AsyncSession = Depends(get_session),
-    bid_id: str = Path(...),
+    bidId: str = Path(...),
     username: str = Query(...),
 ):
-    bid = await bids.change_bid_status(db, bid_id, status, username)
+    bid = await bids.change_bid_status(db, bidId, status, username)
     return bid
 
 
 @bid_router.patch(
-    "/{bid_id}/edit", status_code=status.HTTP_200_OK, response_model=BidResponse
+    "/{bidId}/edit", status_code=status.HTTP_200_OK, response_model=BidResponse
 )
 async def edit_bid(
     bid: BidUpdate,
-    bid_id: str = Path(...),
+    bidId: str = Path(...),
     username: str = Query(...),
     db: AsyncSession = Depends(get_session),
 ):
-    return await bids.edit_bid(db, bid, bid_id, username)
+    return await bids.edit_bid(db, bid, bidId, username)
 
 
 @bid_router.put(
-    "/{bid_id}/submit_decision",
+    "/{bidId}/submit_decision",
     status_code=status.HTTP_200_OK,
     response_model=BidResponse,
 )
 async def submit_decision(
     desicion: BidDecision,
-    bid_id: str,
+    bidId: str,
     username: str = Query(...),
     db: AsyncSession = Depends(get_session),
 ):
-    return await bids.submit_decision(db, bid_id, desicion, username)
+    return await bids.submit_decision(db, bidId, desicion, username)
 
 
 @bid_router.put(
-    "/{bid_id}/feedback", status_code=status.HTTP_200_OK, response_model=BidResponse
+    "/{bidId}/feedback", status_code=status.HTTP_200_OK, response_model=BidResponse
 )
 async def make_feedback(
-    bid_id: str = Path(...),
-    bid_feedback: str = Query(...),
+    bidId: str = Path(...),
+    bidFeedback: str = Query(...),
     username: str = Query(...),
     db: AsyncSession = Depends(get_session),
 ):
-    return await bids.make_feedback(db, bid_id, bid_feedback, username)
+    return await bids.make_feedback(db, bidId, bidFeedback, username)
 
 
 @bid_router.put(
-    "/{bid_id}/rollback/{version}",
+    "/{bidId}/rollback/{version}",
     status_code=status.HTTP_200_OK,
     response_model=BidResponse,
 )
 async def rollback(
-    bid_id: str = Path(...),
+    bidId: str = Path(...),
     version: int = Path(...),
     username: str = Query(...),
     db: AsyncSession = Depends(get_session),
 ):
-    return await bids.rollback(db, bid_id, version, username)
+    return await bids.rollback(db, bidId, version, username)
 
 
-@bid_router.get("/{tender_id}/reviews", status_code=status.HTTP_200_OK)
+@bid_router.get("/{tenderId}/reviews", status_code=status.HTTP_200_OK)
 async def get_revies(
-    tender_id: str = Path(...),
-    author_username: str = Query(...),
-    request_username: str = Query(...),
+    tenderId: str = Path(...),
+    authorUsername: str = Query(...),
+    requestUsername: str = Query(...),
     limit: int = Query(None),
     offset: int = Query(None),
     db: AsyncSession = Depends(get_session),
 ):
     return await bids.get_reviews(
-        db, tender_id, author_username, request_username, limit, offset
+        db, tenderId, authorUsername, requestUsername, limit, offset
     )

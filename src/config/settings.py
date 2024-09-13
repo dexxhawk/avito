@@ -2,6 +2,7 @@ from os import environ
 
 from pydantic_settings import BaseSettings
 
+
 class DefaultSettings(BaseSettings):
     ENV: str = environ.get("ENV", "local")
     PATH_PREFIX: str = environ.get("PATH_PREFIX", "/api")
@@ -31,7 +32,7 @@ class DefaultSettings(BaseSettings):
         return "postgresql+asyncpg://{user}:{password}@{host}:{port}/{database}".format(
             **self.database_settings,
         )
-    
+
 
 def get_settings() -> DefaultSettings:
     env = environ.get("ENV", "local")

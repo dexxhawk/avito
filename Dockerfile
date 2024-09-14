@@ -28,7 +28,6 @@ COPY src/ /app/src/
 
 
 RUN poetry install --no-dev
-RUN poetry shell
 RUN cd src/db && poetry run alembic upgrade head
 
 ENV SERVER_ADDRESS=0.0.0.0:8080

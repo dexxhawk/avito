@@ -10,12 +10,12 @@ from src.controllers import bids
 bid_router = APIRouter(prefix="/bids", tags=["bids"])
 
 
-@bid_router.post("/new", status_code=status.HTTP_200_OK, response_model=BidResponse)
+@bid_router.post("/new", status_code=status.HTTP_200_OK)
 async def create_bid(bid: BidCreate, db: AsyncSession = Depends(get_session)):
     return await bids.create_bid(db, bid)
 
 
-@bid_router.get("/my", status_code=status.HTTP_200_OK, response_model=List[BidResponse])
+@bid_router.get("/my", status_code=status.HTTP_200_OK)
 async def get_user_bids(
     limit: int | None = Query(None),
     offset: int | None = Query(None),
@@ -28,7 +28,6 @@ async def get_user_bids(
 @bid_router.get(
     "/{tenderId}/list",
     status_code=status.HTTP_200_OK,
-    response_model=List[BidResponse],
 )
 async def get_bids_by_tender(
     tenderId: str = Path(...),
@@ -51,7 +50,7 @@ async def get_bid_status(
 
 
 @bid_router.put(
-    "/{bidId}/status", status_code=status.HTTP_200_OK, response_model=BidResponse
+    "/{bidId}/status", status_code=status.HTTP_200_OK
 )
 async def change_bid_status(
     status: BidStatus,
@@ -64,7 +63,7 @@ async def change_bid_status(
 
 
 @bid_router.patch(
-    "/{bidId}/edit", status_code=status.HTTP_200_OK, response_model=BidResponse
+    "/{bidId}/edit", status_code=status.HTTP_200_OK
 )
 async def edit_bid(
     bid: BidUpdate,

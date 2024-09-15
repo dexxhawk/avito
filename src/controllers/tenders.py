@@ -56,8 +56,8 @@ async def create_tender(session: AsyncSession, tender: TenderCreate) -> Tender:
 
 async def get_tender_list(
     session: AsyncSession,
-    limit: int,
-    offset: int,
+    limit: int | None,
+    offset: int | None,
     service_type: List[TenderServiceType] | None,
 ) -> List[Tender]:
     query = select(Tender).limit(limit).offset(offset)
@@ -74,7 +74,7 @@ async def get_tender(session: AsyncSession, tender_id: int) -> Tender:
 
 
 async def get_tenders_by_user(
-    session: AsyncSession, limit: int, offset: int, username: str
+    session: AsyncSession, limit: int | None, offset: int | None, username: str | None
 ):
     query = (
         select(Tender)
@@ -95,7 +95,7 @@ async def get_tenders_by_user(
 
 
 async def get_tender_by_id(
-    session: AsyncSession, tender_id: str, username: Optional[str] = None
+    session: AsyncSession, tender_id: str, username: str | None
 ):
     query = select(Tender).where(Tender.id == tender_id)
 

@@ -1,5 +1,5 @@
 from uuid import UUID
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
 from src.schemas.enums import BidStatus
 
@@ -12,6 +12,11 @@ class BidBase(BaseModel):
     organization_id: UUID
     creator_username: str
 
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True
+    )
+
 
 class BidCreate(BidBase):
     pass
@@ -23,7 +28,8 @@ class BidUpdate(BaseModel):
 
 
 class BidResponse(BidBase):
-    class Config:
-        alias_generator = to_camel
-        populate_by_name = True
-        from_attributes = False
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+        from_attributes=False
+    )

@@ -1,5 +1,5 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, constr
 
 
 class ErrorResponseBase(BaseModel):
-    reason: str | None
+    reason: constr(min_length=5) # type: ignore

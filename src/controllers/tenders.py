@@ -68,11 +68,6 @@ async def get_tender_list(
     return result.scalars().all()
 
 
-async def get_tender(session: AsyncSession, tender_id: int) -> Tender:
-    query = select(Tender).filter(Tender.id == tender_id)
-    result = await session.execute(query)
-    return result.scalars().first()
-
 async def check_if_user_in_organization(session: AsyncSession, username: str, tender: Tender):
     org_query = (
         select(Employee)
@@ -123,7 +118,7 @@ async def get_tender_by_id(
         raise HTTPException(status_code=403, detail="Access denied")
 
     # Проверяем, связан ли пользователь с организацией
-    user = check_if_user_in_organization(session, username, tender)
+    user = await check_if_user_in_organization(session, username, tender)
 
     if user is None:
         raise HTTPException(status_code=403, detail="Access denied")
@@ -144,7 +139,7 @@ async def change_tender_status_by_id(
         raise HTTPException(status_code=403, detail="Username not specified")
 
     # Проверяем, связан ли пользователь с организацией
-    user = check_if_user_in_organization(session, username, tender)
+    user = await check_if_user_in_organization(session, username, tender)
 
     if not user:
         raise HTTPException(status_code=403, detail="Access denied")
@@ -177,7 +172,7 @@ async def edit_tender(
         raise HTTPException(status_code=403, detail="Username not specified")
 
     # Проверяем, связан ли пользователь с организацией
-    user = check_if_user_in_organization(session, username, tender)
+    user = await check_if_user_in_organization(session, username, tender)
 
     if not user:
         raise HTTPException(status_code=403, detail="Access denied")
@@ -205,7 +200,7 @@ async def rollback(session: AsyncSession, tender_id: UUID, version: int, usernam
     if not tender:
         raise HTTPException(status_code=404, detail="Tender not found")
     
-    user = check_if_user_in_organization(session, username, tender)
+    user = await check_if_user_in_organization(session, username, tender)
     if not user:
         raise HTTPException(status_code=403, detail="Access denied")
 

@@ -34,6 +34,7 @@ class BidHistory(Base):
             name="bid_status",
         ),
         nullable=False,
+        server_default=text("'Created'::bid_status"),
     )
     tender_id = mapped_column(Uuid, nullable=False)
     author_type = mapped_column(
@@ -103,7 +104,9 @@ class TenderHistory(Base):
         nullable=False,
     )
     status = mapped_column(
-        Enum("Created", "Published", "Closed", name="tender_status"), nullable=False
+        Enum("Created", "Published", "Closed", name="tender_status"),
+        nullable=False,
+        server_default=text("'Created'::tender_status"),
     )
     organization_id = mapped_column(Uuid, nullable=False)
     creator_username = mapped_column(String(100), nullable=False)
@@ -160,7 +163,9 @@ class Tender(Base):
         nullable=False,
     )
     status = mapped_column(
-        Enum("Created", "Published", "Closed", name="tender_status"), nullable=False
+        Enum("Created", "Published", "Closed", name="tender_status"),
+        nullable=False,
+        server_default=text("'Created'::tender_status"),
     )
     organization_id = mapped_column(Uuid, nullable=False)
     creator_username = mapped_column(String(100), nullable=False)
@@ -233,7 +238,7 @@ class Feedback(Base):
 
     id = mapped_column(Uuid, server_default=text("uuid_generate_v4()"))
     bid_id = mapped_column(Uuid, nullable=False)
-    description = mapped_column(Text, nullable=False)
+    description = mapped_column(String(500), nullable=False)
     creator_username = mapped_column(String(100), nullable=False)
     created_at = mapped_column(
         DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")

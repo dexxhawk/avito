@@ -3,8 +3,12 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import delete, join, select
-from src.controllers.tenders import change_tender_status_by_id, get_tender_by_id
+from sqlalchemy import delete, or_, select
+from src.controllers.tenders import (
+    change_tender_status_by_id,
+    get_tender_by_id,
+    get_tender_by_id_for_user,
+)
 from src.schemas.enums import BidDecision, BidStatus, BidAuthorType, TenderStatus
 from src.db.models.models import (
     Bid,
@@ -18,6 +22,8 @@ from src.db.models.models import (
 )
 from src.schemas.bid import BidCreate, BidResponse, BidUpdate
 from src.controllers.user_organization import (
+    get_user_by_id,
+    get_user_by_username,
     get_users_by_organization,
     get_organization_id_by_username,
 )
@@ -62,15 +68,12 @@ async def create_bid(session: AsyncSession, bid: BidCreate) -> BidResponse:
 
     tender = await get_tender_by_id(session, bid.tender_id)
 
-    # if tender.status != TenderStatus.Published:
-    # raise HTTPException(status_code=403, detail="Tender is not published")
-
     new_bid = Bid(**bid.model_dump())
 
     users = await get_users_by_organization(session, tender.organization_id)
     new_bid.kvorum = min(3, len(users))
-    new_bid.status = BidStatus.Created  # Def
-    new_bid.votes_qty = 0  # Def
+    new_bid.status = BidStatus.Created
+    new_bid.votes_qty = 0
     session.add(new_bid)
 
     try:
@@ -87,23 +90,25 @@ async def create_bid(session: AsyncSession, bid: BidCreate) -> BidResponse:
 
 
 async def get_bids_by_user(
-    session: AsyncSession, limit: int | None, offset: int | None, username: str
+    session: AsyncSession, limit: int | None, offset: int | None, username: str | None
 ):
-    organization_id = await get_organization_id_by_username(session, username)
+    try:
+        organization_id = await get_organization_id_by_username(session, username)  # type: ignore
+    except HTTPException:
+        organization_id = None
 
     query = (
         select(Bid)
-        .select_from(
-            join(Bid, Tender, Bid.tender_id == Tender.id)
-            .join(Organization, Tender.organization_id == Organization.id)
-            .join(
-                OrganizationResponsible,
-                (Organization.id == OrganizationResponsible.organization_id)
-                | (Organization.id == organization_id),
-            )
-            .join(Employee, OrganizationResponsible.user_id == Employee.id)
+        .outerjoin(Employee, Bid.author_id == Employee.id)
+        .outerjoin(
+            OrganizationResponsible, Employee.id == OrganizationResponsible.user_id
         )
-        .filter(Employee.username == username)
+        .filter(
+            or_(
+                Employee.username == username,
+                OrganizationResponsible.organization_id == organization_id,
+            )
+        )
         .order_by(Bid.name.asc())
         .limit(limit)
         .offset(offset)
@@ -132,37 +137,82 @@ async def get_bid_by_id(session: AsyncSession, bid_id: UUID):
     return bid
 
 
-async def get_bid_by_id_for_user(
-    session: AsyncSession, bid_id: UUID, username: str | None, edit_mode: bool = False
+async def get_bid_for_bid_organization(
+    session: AsyncSession, bid_id: UUID, username: str
 ):
-    # Проверяем, существует ли Bid с данным bid_id
+    # Кто в организации bid
     bid = await get_bid_by_id(session, bid_id)
-    if not edit_mode and bid.status == BidStatus.Published:
-        return bid
-    elif username is None:
+    user = await get_user_by_id(session, bid.author_id)
+    organization_id = await get_organization_id_by_username(session, user.username)
+
+    stmt = (
+        select(OrganizationResponsible.user_id)
+        .join(Employee, Employee.id == OrganizationResponsible.user_id)
+        .filter(OrganizationResponsible.organization_id == organization_id)
+        .filter(Employee.username == username)
+    )
+    result = await session.execute(stmt)
+    user_id = result.scalars().first()
+
+    if user_id is None:
         raise HTTPException(status_code=403, detail="Access denied")
 
-    user = await get_user_by_username(session, username)
+    bid = await get_bid_by_id(session, bid_id)
+    if bid is None:
+        raise HTTPException(status_code=404, detail="Wrong bid_id")
 
-    # Проверяем, есть ли у пользователя доступ (он автор или ответственен за тендер)
-    access_query = (
+    return bid
+
+
+async def get_bid_for_tender_organization(
+    session: AsyncSession, bid_id: UUID, username: str
+):
+    # Кто в организации tender
+    stmt = (
         select(Bid)
-        .join(Tender, Bid.tender_id == Tender.id)
-        .join(
+        .join(Tender, Tender.id == Bid.tender_id)
+        .outerjoin(Organization, Organization.id == Tender.organization_id)
+        .outerjoin(
             OrganizationResponsible,
-            Tender.organization_id == OrganizationResponsible.organization_id,
+            OrganizationResponsible.organization_id == Organization.id,
         )
-        .join(Employee, OrganizationResponsible.user_id == Employee.id)
+        .outerjoin(Employee, Employee.id == OrganizationResponsible.user_id)
         .filter(
-            (Bid.id == bid_id)
-            & ((Bid.author_id == user.id) | (Employee.username == username))
+            Bid.id == bid_id,
+            or_(Bid.author_id == Employee.id, Employee.username == username),
         )
     )
 
-    access_result = await session.execute(access_query)
+    access_result = await session.execute(stmt)
     accessible_bid = access_result.scalars().first()
+    if accessible_bid is None:
+        raise HTTPException(status_code=403, detail="Access denied")
+    return accessible_bid
 
-    if not accessible_bid:
+
+async def get_bid_by_id_for_user(
+    session: AsyncSession, bid_id: UUID, username: str, edit_mode: bool = False
+):
+    bid = await get_bid_by_id(session, bid_id)
+    if not edit_mode and bid.status == BidStatus.Published:
+        return bid
+
+    try:
+        accessible_bid = await get_bid_for_tender_organization(
+            session, bid_id, username
+        )
+    except HTTPException:
+        accessible_bid = None
+
+    if accessible_bid is None:
+        try:
+            accessible_bid = await get_bid_for_bid_organization(
+                session, bid_id, username
+            )
+        except HTTPException:
+            accessible_bid = None
+
+    if accessible_bid is None:
         raise HTTPException(status_code=403, detail="Access denied")
 
     return accessible_bid
@@ -182,7 +232,7 @@ async def change_bid_status(
 async def edit_bid(
     session: AsyncSession, bid_update: BidUpdate, bid_id: UUID, username: str
 ):
-    bid = await get_bid_by_id_for_user(session, bid_id, username, edit_mode=True)
+    bid = await get_bid_for_bid_organization(session, bid_id, username)
 
     for key, val in bid_update.model_dump(exclude_unset=True).items():
         setattr(bid, key, val)
@@ -207,7 +257,10 @@ async def get_bids_by_tender(
     limit: int | None = None,
     offset: int | None = None,
 ) -> List[Bid]:
+    # Организация запрашивающего
     organization_id = await get_organization_id_by_username(session, username)
+
+    await get_tender_by_id(session, tender_id)
 
     access_query = (
         select(Bid)
@@ -234,7 +287,7 @@ async def get_bids_by_tender(
     access_result = await session.execute(access_query)
     bids = access_result.scalars().all()
 
-    if not bids:
+    if bids is None:
         raise HTTPException(status_code=403, detail="Access denied")
 
     return bids
@@ -243,10 +296,7 @@ async def get_bids_by_tender(
 async def make_feedback(
     session: AsyncSession, bid_id: UUID, bid_feedback: str, username: str
 ):
-    bid = await get_bid_by_id_for_user(session, bid_id, username, edit_mode=True)
-
-    # if bid.votes_qty < bid.kvorum:
-    #     raise HTTPException(status_code=400, detail="Bid is not approved")
+    bid = await get_bid_for_tender_organization(session, bid_id, username)
 
     new_feedback = Feedback(
         bid_id=bid_id, description=bid_feedback, creator_username=username
@@ -267,14 +317,14 @@ async def get_reviews(
     offset: int | None,
 ):
     author = await get_user_by_username(session, author_username)
-    organization_id = await get_organization_id_by_username(session, request_username)
+
+    await get_tender_by_id_for_user(session, tender_id, request_username)
 
     stmt = (
         select(Feedback)
         .join(Bid, Bid.id == Feedback.bid_id)
         .filter(Bid.tender_id == tender_id)
         .filter(Bid.author_id == author.id)
-        .join(Organization, Organization.id == organization_id)
         .limit(limit)
         .offset(offset)
     )
@@ -285,14 +335,14 @@ async def get_reviews(
     return feedbacks
 
 
-async def get_vote_by_user_id(session: AsyncSession, user_id: UUID):
-    stmt = select(Vote).filter(Vote.user_id == user_id)
+async def get_vote_by_user_id(session: AsyncSession, bid_id: UUID, user_id: UUID):
+    stmt = select(Vote).filter((Vote.bid_id == bid_id) & (Vote.user_id == user_id))
     result = await session.execute(stmt)
     return result.scalars().first()
 
 
 async def create_vote(session: AsyncSession, bid_id: UUID, user_id: UUID):
-    vote = await get_vote_by_user_id(session, user_id)
+    vote = await get_vote_by_user_id(session, bid_id, user_id)
     if vote is not None:
         raise HTTPException(status_code=400, detail="This user voted earlier")
 
@@ -309,20 +359,11 @@ async def delete_votes(session: AsyncSession, bid_id: UUID, user_id: UUID):
     await session.commit()
 
 
-async def get_user_by_username(session: AsyncSession, username: str):
-    stmt = select(Employee).filter(Employee.username == username)
-    result = await session.execute(stmt)
-    user = result.scalars().first()
-    if user is None:
-        raise HTTPException(status_code=404, detail="User with this username not found")
-    return user
-
-
 async def submit_decision(
     session: AsyncSession, bid_id: UUID, new_desicion: BidDecision, username: str
 ):
     user = await get_user_by_username(session, username)
-    bid = await get_bid_by_id_for_user(session, bid_id, username, edit_mode=True)
+    bid = await get_bid_for_tender_organization(session, bid_id, username)
 
     if new_desicion == BidDecision.Approved:
         await create_vote(session, bid_id, user.id)
@@ -355,7 +396,7 @@ async def get_bid_history_by_id(session: AsyncSession, bid_id: UUID, version: in
 
 
 async def rollback(session: AsyncSession, bid_id: UUID, version: int, username: str):
-    bid = await get_bid_by_id_for_user(session, bid_id, username, edit_mode=True)
+    bid = await get_bid_for_bid_organization(session, bid_id, username)
 
     bid_history = await get_bid_history_by_id(session, bid_id, version)
 

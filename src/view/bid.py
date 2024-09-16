@@ -21,7 +21,7 @@ async def create_bid(bid: BidCreate, db: AsyncSession = Depends(get_session)):
 async def get_user_bids(
     limit: int | None = Query(None, ge=0),
     offset: int | None = Query(None, ge=0),
-    username: str = Query(None),
+    username: str | None = Query(None),
     db: AsyncSession = Depends(get_session),
 ):
     return await bids.get_bids_by_user(db, limit, offset, username)
@@ -46,7 +46,7 @@ async def get_bids_by_tender(
 async def get_bid_status(
     db: AsyncSession = Depends(get_session),
     bidId: UUID = Path(...),
-    username: str | None = Query(None),
+    username: str = Query(...),
 ):
     bid = await bids.get_bid_by_id_for_user(db, bidId, username)
     return bid.status

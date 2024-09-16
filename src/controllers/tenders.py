@@ -110,7 +110,7 @@ async def get_tender_by_id_for_user(
 ):
     tender = await get_tender_by_id(session, tender_id)
 
-    if tender.status == "Published":
+    if tender.status == TenderStatus.Published:
         return tender
     if username is None:
         raise HTTPException(status_code=403, detail="Access denied")

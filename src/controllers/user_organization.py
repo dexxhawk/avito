@@ -31,11 +31,12 @@ async def get_users_by_organization(session: AsyncSession, organization_id: UUID
     return result.scalars().all()
 
 
-async def get_organization_id_by_username(session: AsyncSession, username: str):
+async def get_organization_id_by_username(session: AsyncSession, username: str | None):
     stmt = (
         select(OrganizationResponsible.organization_id)
         .join(Employee)
         .filter(Employee.id == OrganizationResponsible.user_id)
+        .filter(Employee.username == username)
     )
     result = await session.execute(stmt)
     organization_id = result.scalars().first()
@@ -44,3 +45,21 @@ async def get_organization_id_by_username(session: AsyncSession, username: str):
             status_code=404, detail="Organization for this username not found"
         )
     return organization_id
+
+
+async def get_user_by_username(session: AsyncSession, username: str):
+    stmt = select(Employee).filter(Employee.username == username)
+    result = await session.execute(stmt)
+    user = result.scalars().first()
+    if user is None:
+        raise HTTPException(status_code=404, detail="User with this username not found")
+    return user
+
+
+async def get_user_by_id(session: AsyncSession, user_id: str):
+    stmt = select(Employee).filter(Employee.id == user_id)
+    result = await session.execute(stmt)
+    user = result.scalars().first()
+    if user is None:
+        raise HTTPException(status_code=404, detail="User with this id not found")
+    return user

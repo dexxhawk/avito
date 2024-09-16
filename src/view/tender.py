@@ -61,7 +61,7 @@ async def change_tender_status(
     status: TenderStatus,
     db: AsyncSession = Depends(get_session),
     tenderId: UUID = Path(...),
-    username: str = Query("test_user"),
+    username: str = Query(...),
 ):
     return await tenders.change_tender_status_by_id(db, tenderId, username, status)
 

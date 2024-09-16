@@ -4,9 +4,6 @@ from src.view import list_of_routes
 from src.config.settings import get_settings
 import subprocess
 
-# logger = logging.getLogger(__name__)
-# logger.setLevel(logging.INFO)
-
 
 def run_migrations():
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -22,7 +19,7 @@ def run_migrations():
 
 
 def get_app() -> FastAPI:
-    # run_migrations()
+    run_migrations()
     app = FastAPI(
         title="Tender Management API",
         description="""API для управления тендерами и предложениями.
@@ -32,6 +29,7 @@ def get_app() -> FastAPI:
         version="1.0",
     )
     settings = get_settings()
+    print(settings.database_uri)
     app.state.settings = settings
     for route in list_of_routes:
         app.include_router(router=route, prefix="/api")

@@ -1,8 +1,8 @@
-"""Init migration
+"""Init
 
-Revision ID: 5190e50192f3
+Revision ID: 8164c32e7a9c
 Revises:
-Create Date: 2024-09-19 06:47:44.737396
+Create Date: 2024-09-20 00:10:21.799626
 
 """
 
@@ -10,12 +10,11 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy import engine_from_config
 from sqlalchemy.engine import reflection
 
 
 # revision identifiers, used by Alembic.
-revision: str = "5190e50192f3"
+revision: str = "8164c32e7a9c"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -23,12 +22,12 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def get_tables():
     config = op.get_context().config
-    engine = engine_from_config(
+    engine = sa.engine_from_config(
         config.get_section(config.config_ini_section), prefix="sqlalchemy."
     )
     inspector = reflection.Inspector.from_engine(engine)
     tables = inspector.get_table_names()
-    return set(tables)
+    return tables
 
 
 tables = set(get_tables())
@@ -58,6 +57,7 @@ def upgrade() -> None:
                 "Rejected",
                 name="bid_status",
             ),
+            server_default=sa.text("'Created'::bid_status"),
             nullable=False,
         ),
         sa.Column("tender_id", sa.Uuid(), nullable=False),
@@ -84,7 +84,6 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id", name="bid_history_pkey"),
     )
-
     if "employee" not in tables:
         op.create_table(
             "employee",
@@ -113,6 +112,7 @@ def upgrade() -> None:
             sa.UniqueConstraint("username", name="employee_username_key"),
         )
         tables.add("employee")
+
     if "organization" not in tables:
         op.create_table(
             "organization",
@@ -144,6 +144,7 @@ def upgrade() -> None:
             sa.PrimaryKeyConstraint("id", name="organization_pkey"),
         )
         tables.add("organization")
+
     op.create_table(
         "tender_history",
         sa.Column(
@@ -164,6 +165,7 @@ def upgrade() -> None:
         sa.Column(
             "status",
             sa.Enum("Created", "Published", "Closed", name="tender_status"),
+            server_default=sa.text("'Created'::tender_status"),
             nullable=False,
         ),
         sa.Column("organization_id", sa.Uuid(), nullable=False),
@@ -203,7 +205,8 @@ def upgrade() -> None:
             ),
             sa.PrimaryKeyConstraint("id", name="organization_responsible_pkey"),
         )
-        tables.add("organization_responsible")
+    tables.add("organization_responsible")
+
     op.create_table(
         "tender",
         sa.Column(
@@ -223,6 +226,7 @@ def upgrade() -> None:
         sa.Column(
             "status",
             sa.Enum("Created", "Published", "Closed", name="tender_status"),
+            server_default=sa.text("'Created'::tender_status"),
             nullable=False,
         ),
         sa.Column("organization_id", sa.Uuid(), nullable=False),
@@ -300,7 +304,7 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column("bid_id", sa.Uuid(), nullable=False),
-        sa.Column("description", sa.Text(), nullable=False),
+        sa.Column("description", sa.String(length=500), nullable=False),
         sa.Column("creator_username", sa.String(length=100), nullable=False),
         sa.Column(
             "created_at",

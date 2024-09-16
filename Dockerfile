@@ -21,7 +21,7 @@ ENV PATH="/root/.local/bin:${PATH}"
 WORKDIR /app
 
 
-COPY pyproject.toml README.md ./
+COPY pyproject.toml ./
 
 
 COPY src/ /app/src/
@@ -29,14 +29,9 @@ COPY src/ /app/src/
 
 RUN poetry install --no-dev
 
+
 ENV SERVER_ADDRESS=0.0.0.0:8080
-ENV POSTGRES_CONN=
-ENV POSTGRES_JDBC_URL=
-ENV POSTGRES_USERNAME=
-ENV POSTGRES_PASSWORD=
-ENV POSTGRES_HOST=
-ENV POSTGRES_PORT=
-ENV POSTGRES_DATABASE=
+
 
 EXPOSE 8080
 

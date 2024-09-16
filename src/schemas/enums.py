@@ -1,33 +1,29 @@
 from enum import Enum
-from typing import Literal
-
-TenderStatus = Literal["Created", "Published", "Closed"]
-TenderServiceType = Literal["Construction", "Delivery", "Manufacture"]
-BidStatus = Literal["Created", "Published", "Canceled", "Approved", "Rejected"]
-BidDecision = Literal["Approved", "Rejected"]
-BidAuthorType = Literal["Organization", "User"]
 
 
-# class TenderStatus(Enum):
-#     Created = 'Created'
-#     Published = 'Published'
-#     Closed = 'Closed'
-
-# class TenderServiceType(Enum):
-#     Construction = 'Construction'
-#     Delivery = 'Delivery'
-#     Manufacture = 'Manufacture'
-
-# class BidStatus(Enum):
-#     Created = 'Created'
-#     Published = 'Published'
-#     Canceled = 'Canceled'
+class TenderStatus(str, Enum):
+    Created = "Created"
+    Published = "Published"
+    Closed = "Closed"
 
 
-# class BidDecision(Enum):
-#     Approved = 'Approved'
-#     Rejected = 'Rejected'
+class TenderServiceType(str, Enum):
+    Construction = "Construction"
+    Delivery = "Delivery"
+    Manufacture = "Manufacture"
 
-# class BidAuthorType(Enum):
-#     Organization = 'Organization'
-#     User = 'User'
+
+class BidStatus(str, Enum):
+    Created = "Created"
+    Published = "Published"
+    Canceled = "Canceled"
+
+
+class BidDecision(str, Enum):
+    Approved = "Approved"
+    Rejected = "Rejected"
+
+
+class BidAuthorType(str, Enum):
+    Organization = "Organization"
+    User = "User"

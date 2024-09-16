@@ -37,5 +37,4 @@ class DefaultSettings(BaseSettings):
 
 
 def get_settings() -> DefaultSettings:
-    env = environ.get("ENV", "local")
     return DefaultSettings()

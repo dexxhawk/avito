@@ -1,7 +1,6 @@
 from typing import List, Optional
 
 from sqlalchemy import (
-    Column,
     DateTime,
     Enum,
     ForeignKeyConstraint,
@@ -14,7 +13,6 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
-from sqlalchemy.orm.base import Mapped
 
 Base = declarative_base()
 
@@ -68,6 +66,9 @@ class Employee(Base):
 
     organization_responsible: Mapped[List["OrganizationResponsible"]] = relationship(
         "OrganizationResponsible", uselist=True, back_populates="user"
+    )
+    vote: Mapped[List["Vote"]] = relationship(
+        "Vote", uselist=True, back_populates="user"
     )
 
 
@@ -196,6 +197,7 @@ class Bid(Base):
             name="bid_status",
         ),
         nullable=False,
+        server_default=text("'Created'::bid_status"),
     )
     tender_id = mapped_column(Uuid, nullable=False)
     author_type = mapped_column(
@@ -207,13 +209,16 @@ class Bid(Base):
         DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")
     )
     kvorum = mapped_column(Integer, nullable=False)
-    votes_qty = mapped_column(Integer, nullable=False)
+    votes_qty = mapped_column(Integer, nullable=False, server_default=text("0"))
     description = mapped_column(String(500))
     decision = mapped_column(Enum("Approved", "Rejected", name="bid_decision"))
 
     tender: Mapped["Tender"] = relationship("Tender", back_populates="bid")
     feedback: Mapped[List["Feedback"]] = relationship(
         "Feedback", uselist=True, back_populates="bid"
+    )
+    vote: Mapped[List["Vote"]] = relationship(
+        "Vote", uselist=True, back_populates="bid"
     )
 
 
@@ -228,7 +233,30 @@ class Feedback(Base):
 
     id = mapped_column(Uuid, server_default=text("uuid_generate_v4()"))
     bid_id = mapped_column(Uuid, nullable=False)
-    feedback = mapped_column(Text, nullable=False)
+    description = mapped_column(Text, nullable=False)
     creator_username = mapped_column(String(100), nullable=False)
+    created_at = mapped_column(
+        DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")
+    )
 
     bid: Mapped["Bid"] = relationship("Bid", back_populates="feedback")
+
+
+class Vote(Base):
+    __tablename__ = "vote"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["bid_id"], ["bid.id"], ondelete="CASCADE", name="vote_bid_id_fkey"
+        ),
+        ForeignKeyConstraint(
+            ["user_id"], ["employee.id"], ondelete="CASCADE", name="vote_user_id_fkey"
+        ),
+        PrimaryKeyConstraint("id", name="vote_pkey"),
+    )
+
+    id = mapped_column(Uuid, server_default=text("uuid_generate_v4()"))
+    bid_id = mapped_column(Uuid, nullable=False)
+    user_id = mapped_column(Uuid, nullable=False)
+
+    bid: Mapped["Bid"] = relationship("Bid", back_populates="vote")
+    user: Mapped["Employee"] = relationship("Employee", back_populates="vote")

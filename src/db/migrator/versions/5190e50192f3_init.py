@@ -1,8 +1,8 @@
-"""Init
+"""Init migration
 
-Revision ID: b8b56c5cd951
+Revision ID: 5190e50192f3
 Revises:
-Create Date: 2024-09-16 04:26:04.375273
+Create Date: 2024-09-19 06:47:44.737396
 
 """
 
@@ -10,13 +10,28 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import engine_from_config
+from sqlalchemy.engine import reflection
 
 
 # revision identifiers, used by Alembic.
-revision: str = "b8b56c5cd951"
+revision: str = "5190e50192f3"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
+
+
+def get_tables():
+    config = op.get_context().config
+    engine = engine_from_config(
+        config.get_section(config.config_ini_section), prefix="sqlalchemy."
+    )
+    inspector = reflection.Inspector.from_engine(engine)
+    tables = inspector.get_table_names()
+    return set(tables)
+
+
+tables = set(get_tables())
 
 
 def upgrade() -> None:
@@ -69,59 +84,66 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id", name="bid_history_pkey"),
     )
-    op.create_table(
-        "employee",
-        sa.Column(
-            "id",
-            sa.Uuid(),
-            server_default=sa.text("uuid_generate_v4()"),
-            nullable=False,
-        ),
-        sa.Column("username", sa.String(length=50), nullable=False),
-        sa.Column("first_name", sa.String(length=50), nullable=True),
-        sa.Column("last_name", sa.String(length=50), nullable=True),
-        sa.Column(
-            "created_at",
-            sa.DateTime(),
-            server_default=sa.text("CURRENT_TIMESTAMP"),
-            nullable=True,
-        ),
-        sa.Column(
-            "updated_at",
-            sa.DateTime(),
-            server_default=sa.text("CURRENT_TIMESTAMP"),
-            nullable=True,
-        ),
-        sa.PrimaryKeyConstraint("id", name="employee_pkey"),
-        sa.UniqueConstraint("username", name="employee_username_key"),
-    )
-    op.create_table(
-        "organization",
-        sa.Column(
-            "id",
-            sa.Uuid(),
-            server_default=sa.text("uuid_generate_v4()"),
-            nullable=False,
-        ),
-        sa.Column("name", sa.String(length=100), nullable=False),
-        sa.Column("description", sa.Text(), nullable=True),
-        sa.Column(
-            "type", sa.Enum("IE", "LLC", "JSC", name="organization_type"), nullable=True
-        ),
-        sa.Column(
-            "created_at",
-            sa.DateTime(),
-            server_default=sa.text("CURRENT_TIMESTAMP"),
-            nullable=True,
-        ),
-        sa.Column(
-            "updated_at",
-            sa.DateTime(),
-            server_default=sa.text("CURRENT_TIMESTAMP"),
-            nullable=True,
-        ),
-        sa.PrimaryKeyConstraint("id", name="organization_pkey"),
-    )
+
+    if "employee" not in tables:
+        op.create_table(
+            "employee",
+            sa.Column(
+                "id",
+                sa.Uuid(),
+                server_default=sa.text("uuid_generate_v4()"),
+                nullable=False,
+            ),
+            sa.Column("username", sa.String(length=50), nullable=False),
+            sa.Column("first_name", sa.String(length=50), nullable=True),
+            sa.Column("last_name", sa.String(length=50), nullable=True),
+            sa.Column(
+                "created_at",
+                sa.DateTime(),
+                server_default=sa.text("CURRENT_TIMESTAMP"),
+                nullable=True,
+            ),
+            sa.Column(
+                "updated_at",
+                sa.DateTime(),
+                server_default=sa.text("CURRENT_TIMESTAMP"),
+                nullable=True,
+            ),
+            sa.PrimaryKeyConstraint("id", name="employee_pkey"),
+            sa.UniqueConstraint("username", name="employee_username_key"),
+        )
+        tables.add("employee")
+    if "organization" not in tables:
+        op.create_table(
+            "organization",
+            sa.Column(
+                "id",
+                sa.Uuid(),
+                server_default=sa.text("uuid_generate_v4()"),
+                nullable=False,
+            ),
+            sa.Column("name", sa.String(length=100), nullable=False),
+            sa.Column("description", sa.Text(), nullable=True),
+            sa.Column(
+                "type",
+                sa.Enum("IE", "LLC", "JSC", name="organization_type"),
+                nullable=True,
+            ),
+            sa.Column(
+                "created_at",
+                sa.DateTime(),
+                server_default=sa.text("CURRENT_TIMESTAMP"),
+                nullable=True,
+            ),
+            sa.Column(
+                "updated_at",
+                sa.DateTime(),
+                server_default=sa.text("CURRENT_TIMESTAMP"),
+                nullable=True,
+            ),
+            sa.PrimaryKeyConstraint("id", name="organization_pkey"),
+        )
+        tables.add("organization")
     op.create_table(
         "tender_history",
         sa.Column(
@@ -156,30 +178,32 @@ def upgrade() -> None:
         sa.Column("description", sa.String(length=500), nullable=True),
         sa.PrimaryKeyConstraint("id", name="tender_history_pkey"),
     )
-    op.create_table(
-        "organization_responsible",
-        sa.Column(
-            "id",
-            sa.Uuid(),
-            server_default=sa.text("uuid_generate_v4()"),
-            nullable=False,
-        ),
-        sa.Column("organization_id", sa.Uuid(), nullable=True),
-        sa.Column("user_id", sa.Uuid(), nullable=True),
-        sa.ForeignKeyConstraint(
-            ["organization_id"],
-            ["organization.id"],
-            name="organization_responsible_organization_id_fkey",
-            ondelete="CASCADE",
-        ),
-        sa.ForeignKeyConstraint(
-            ["user_id"],
-            ["employee.id"],
-            name="organization_responsible_user_id_fkey",
-            ondelete="CASCADE",
-        ),
-        sa.PrimaryKeyConstraint("id", name="organization_responsible_pkey"),
-    )
+    if "organization_responsible" not in tables:
+        op.create_table(
+            "organization_responsible",
+            sa.Column(
+                "id",
+                sa.Uuid(),
+                server_default=sa.text("uuid_generate_v4()"),
+                nullable=False,
+            ),
+            sa.Column("organization_id", sa.Uuid(), nullable=True),
+            sa.Column("user_id", sa.Uuid(), nullable=True),
+            sa.ForeignKeyConstraint(
+                ["organization_id"],
+                ["organization.id"],
+                name="organization_responsible_organization_id_fkey",
+                ondelete="CASCADE",
+            ),
+            sa.ForeignKeyConstraint(
+                ["user_id"],
+                ["employee.id"],
+                name="organization_responsible_user_id_fkey",
+                ondelete="CASCADE",
+            ),
+            sa.PrimaryKeyConstraint("id", name="organization_responsible_pkey"),
+        )
+        tables.add("organization_responsible")
     op.create_table(
         "tender",
         sa.Column(
@@ -235,6 +259,7 @@ def upgrade() -> None:
                 "Rejected",
                 name="bid_status",
             ),
+            server_default=sa.text("'Created'::bid_status"),
             nullable=False,
         ),
         sa.Column("tender_id", sa.Uuid(), nullable=False),
@@ -252,7 +277,9 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column("kvorum", sa.Integer(), nullable=False),
-        sa.Column("votes_qty", sa.Integer(), nullable=False),
+        sa.Column(
+            "votes_qty", sa.Integer(), server_default=sa.text("0"), nullable=False
+        ),
         sa.Column("description", sa.String(length=500), nullable=True),
         sa.Column(
             "decision",
@@ -273,18 +300,43 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column("bid_id", sa.Uuid(), nullable=False),
-        sa.Column("feedback", sa.Text(), nullable=False),
+        sa.Column("description", sa.Text(), nullable=False),
         sa.Column("creator_username", sa.String(length=100), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+            nullable=False,
+        ),
         sa.ForeignKeyConstraint(
             ["bid_id"], ["bid.id"], name="feedback_bid_id_fkey", ondelete="CASCADE"
         ),
         sa.PrimaryKeyConstraint("id", name="feedback_pkey"),
+    )
+    op.create_table(
+        "vote",
+        sa.Column(
+            "id",
+            sa.Uuid(),
+            server_default=sa.text("uuid_generate_v4()"),
+            nullable=False,
+        ),
+        sa.Column("bid_id", sa.Uuid(), nullable=False),
+        sa.Column("user_id", sa.Uuid(), nullable=False),
+        sa.ForeignKeyConstraint(
+            ["bid_id"], ["bid.id"], name="vote_bid_id_fkey", ondelete="CASCADE"
+        ),
+        sa.ForeignKeyConstraint(
+            ["user_id"], ["employee.id"], name="vote_user_id_fkey", ondelete="CASCADE"
+        ),
+        sa.PrimaryKeyConstraint("id", name="vote_pkey"),
     )
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     # ### commands auto generated by Alembic - please adjust! ###
+    op.drop_table("vote")
     op.drop_table("feedback")
     op.drop_table("bid")
     op.drop_table("tender")
@@ -293,10 +345,10 @@ def downgrade() -> None:
     op.drop_table("organization")
     op.drop_table("employee")
     op.drop_table("bid_history")
-    op.execute("DROP TYPE IF EXISTS organization_type")
-    op.execute("DROP TYPE IF EXISTS tender_status")
-    op.execute("DROP TYPE IF EXISTS tender_service_type")
     op.execute("DROP TYPE IF EXISTS bid_status")
     op.execute("DROP TYPE IF EXISTS bid_decision")
     op.execute("DROP TYPE IF EXISTS bid_author_type")
+    op.execute("DROP TYPE IF EXISTS tender_status")
+    op.execute("DROP TYPE IF EXISTS tender_service_type")
+    op.execute("DROP TYPE IF EXISTS organization_type")
     # ### end Alembic commands ###

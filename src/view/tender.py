@@ -50,7 +50,7 @@ async def get_tender_status(
     tenderId: UUID = Path(...),
     username: str | None = Query("test_user"),
 ):
-    tender = await tenders.get_tender_by_id(db, tenderId, username)
+    tender = await tenders.get_tender_by_id_for_user(db, tenderId, username)
     return tender.status
 
 

@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
@@ -12,6 +12,9 @@ from src.db.models.models import (
     TenderHistory,
 )
 from src.schemas.tender import TenderCreate, TenderUpdate
+from src.controllers.user_organization import (
+    check_if_user_in_organization,
+)
 
 
 async def create_tender_history(session: AsyncSession, new_tender: Tender):
@@ -68,20 +71,6 @@ async def get_tender_list(
     return result.scalars().all()
 
 
-async def check_if_user_in_organization(
-    session: AsyncSession, username: str, tender: Tender
-):
-    org_query = (
-        select(Employee)
-        .join(OrganizationResponsible, Employee.id == OrganizationResponsible.user_id)
-        .where(Employee.username == username)
-        .where(OrganizationResponsible.organization_id == tender.organization_id)
-    )
-    user_in_org = await session.execute(org_query)
-    user = user_in_org.scalars().first()
-    return user
-
-
 async def get_tenders_by_user(
     session: AsyncSession, limit: int | None, offset: int | None, username: str | None
 ):
@@ -93,6 +82,7 @@ async def get_tenders_by_user(
         )
         .join(Employee, OrganizationResponsible.user_id == Employee.id)
         .filter(Employee.username == username)
+        .order_by(Tender.name.asc())
         .limit(limit)
         .offset(offset)
     )
@@ -103,9 +93,7 @@ async def get_tenders_by_user(
     return tenders
 
 
-async def get_tender_by_id(
-    session: AsyncSession, tender_id: UUID, username: str | None
-):
+async def get_tender_by_id(session: AsyncSession, tender_id: UUID):
     query = select(Tender).where(Tender.id == tender_id)
 
     result = await session.execute(query)
@@ -113,6 +101,14 @@ async def get_tender_by_id(
 
     if not tender:
         raise HTTPException(status_code=404, detail="Tender not found")
+
+    return tender
+
+
+async def get_tender_by_id_for_user(
+    session: AsyncSession, tender_id: UUID, username: str | None
+):
+    tender = await get_tender_by_id(session, tender_id)
 
     if tender.status == "Published":
         return tender
@@ -196,9 +192,7 @@ async def edit_tender(
 
 
 async def rollback(session: AsyncSession, tender_id: UUID, version: int, username: str):
-    tender = await get_tender_by_id(session, tender_id, username)
-    if not tender:
-        raise HTTPException(status_code=404, detail="Tender not found")
+    tender = await get_tender_by_id_for_user(session, tender_id, username)
 
     user = await check_if_user_in_organization(session, username, tender)
     if not user:

@@ -46,9 +46,9 @@ async def get_bids_by_tender(
 async def get_bid_status(
     db: AsyncSession = Depends(get_session),
     bidId: UUID = Path(...),
-    username: str = Query(...),
+    username: str | None = Query(None),
 ):
-    bid = await bids.get_bid_by_id(db, bidId, username)
+    bid = await bids.get_bid_by_id_for_user(db, bidId, username)
     return bid.status
 
 
@@ -120,9 +120,9 @@ async def rollback(
 @bid_router.get(
     "/{tenderId}/reviews",
     status_code=status.HTTP_200_OK,
-    response_model=FeedbackResponse,
+    response_model=List[FeedbackResponse],
 )
-async def get_revies(
+async def get_reviews(
     tenderId: UUID = Path(...),
     authorUsername: str = Query(...),
     requestUsername: str = Query(...),

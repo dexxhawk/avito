@@ -29,7 +29,6 @@ def get_app() -> FastAPI:
         version="1.0",
     )
     settings = get_settings()
-    print(settings.database_uri)
     app.state.settings = settings
     for route in list_of_routes:
         app.include_router(router=route, prefix="/api")

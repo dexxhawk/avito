@@ -1,8 +1,10 @@
 from typing import List, Optional
+from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import join, select
+from schema import BidDecision
 from src.db.models.models import (
     Bid,
     BidHistory,
@@ -13,6 +15,7 @@ from src.db.models.models import (
     Tender,
 )
 from src.schemas.bid import BidCreate, BidUpdate
+from src.schemas.enums import BidDecision
 
 
 async def create_bid_history(session: AsyncSession, new_bid: Bid):
@@ -80,7 +83,7 @@ async def get_bids_by_user(
     return bids
 
 
-async def get_bid_by_id(session: AsyncSession, bid_id: str, username: str):
+async def get_bid_by_id(session: AsyncSession, bid_id: UUID, username: str):
     # Проверяем, существует ли Bid с данным bid_id
     bid_query = select(Bid).filter(Bid.id == bid_id)
     bid_result = await session.execute(bid_query)
@@ -114,7 +117,7 @@ async def get_bid_by_id(session: AsyncSession, bid_id: str, username: str):
 
 
 async def change_bid_status(
-    session: AsyncSession, bid_id: str, new_status: str, username: str
+    session: AsyncSession, bid_id: UUID, new_status: str, username: str
 ):
     bid = await get_bid_by_id(session, bid_id, username)
 
@@ -129,7 +132,7 @@ async def change_bid_status(
 
 
 async def edit_bid(
-    session: AsyncSession, bid_update: BidUpdate, bid_id: str, username: str
+    session: AsyncSession, bid_update: BidUpdate, bid_id: UUID, username: str
 ):
     bid = await get_bid_by_id(session, bid_id, username)
 
@@ -154,7 +157,7 @@ async def edit_bid(
 
 async def get_bids_by_tender(
     session: AsyncSession,
-    tender_id: str,
+    tender_id: UUID,
     username: str,
     limit: Optional[int] = None,
     offset: Optional[int] = None,
@@ -191,7 +194,7 @@ async def get_bids_by_tender(
 
 
 async def make_feedback(
-    session: AsyncSession, bid_id: str, bid_feedback: str, username: str
+    session: AsyncSession, bid_id: UUID, bid_feedback: str, username: str
 ):
     stmt = select(Bid).where(Bid.id == bid_id)
     result = await session.execute(stmt)
@@ -212,7 +215,7 @@ async def make_feedback(
 
 async def get_reviews(
     session: AsyncSession,
-    tender_id: str,
+    tender_id: UUID,
     author_username: str,
     request_username: str,
     limit: int,
@@ -252,7 +255,7 @@ async def get_reviews(
 
 
 async def submit_decision(
-    session: AsyncSession, bid_id: str, new_desicion: str, username: str
+    session: AsyncSession, bid_id: UUID, new_desicion: BidDecision, username: str
 ):
     bid = await get_bid_by_id(session, bid_id, username)
     bid.decision = new_desicion
@@ -261,7 +264,7 @@ async def submit_decision(
     return bid
 
 
-async def rollback(session: AsyncSession, bid_id: str, version: int, username: str):
+async def rollback(session: AsyncSession, bid_id: UUID, version: int, username: str):
     bid = await get_bid_by_id(session, bid_id, username)
     if not bid:
         raise HTTPException(status_code=404, detail="Bid not found")

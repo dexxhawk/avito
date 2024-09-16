@@ -1,4 +1,5 @@
 from typing import List, Optional
+from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -95,7 +96,7 @@ async def get_tenders_by_user(
 
 
 async def get_tender_by_id(
-    session: AsyncSession, tender_id: str, username: str | None
+    session: AsyncSession, tender_id: UUID, username: str | None
 ):
     query = select(Tender).where(Tender.id == tender_id)
 
@@ -127,7 +128,7 @@ async def get_tender_by_id(
 
 
 async def change_tender_status_by_id(
-    session: AsyncSession, tender_id: str, username: str, new_status: TenderStatus
+    session: AsyncSession, tender_id: UUID, username: str, new_status: TenderStatus
 ):
     query = select(Tender).where(Tender.id == tender_id)
     result = await session.execute(query)
@@ -167,7 +168,7 @@ async def change_tender_status_by_id(
 
 
 async def edit_tender(
-    session: AsyncSession, tender_update: TenderUpdate, tender_id: str, username: str
+    session: AsyncSession, tender_update: TenderUpdate, tender_id: UUID, username: str
 ):
     query = select(Tender).where(Tender.id == tender_id)
     result = await session.execute(query)
@@ -209,7 +210,7 @@ async def edit_tender(
         raise HTTPException(status_code=403, detail="Access denied")
 
 
-async def rollback(session: AsyncSession, tender_id: str, version: int, username: str):
+async def rollback(session: AsyncSession, tender_id: UUID, version: int, username: str):
     tender = await get_tender_by_id(session, tender_id, username)
     if not tender:
         raise HTTPException(status_code=404, detail="Tender not found")

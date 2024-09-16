@@ -1,3 +1,4 @@
+from uuid import UUID
 from fastapi import APIRouter, Path, Query, status, Depends
 from typing import List
 from src.schemas.enums import TenderServiceType, TenderStatus
@@ -39,7 +40,7 @@ async def get_user_tenders(
 @tender_router.get("/{tenderId}/status", status_code=status.HTTP_200_OK, response_model=TenderStatus)
 async def get_tender_status(
     db: AsyncSession = Depends(get_session),
-    tenderId: str = Path(...),
+    tenderId: UUID = Path(...),
     username: str | None = Query("test_user"),
 ):
     tender = await tenders.get_tender_by_id(db, tenderId, username)
@@ -52,7 +53,7 @@ async def get_tender_status(
 async def change_tender_status(
     status: TenderStatus,
     db: AsyncSession = Depends(get_session),
-    tenderId: str = Path(...),
+    tenderId: UUID = Path(...),
     username: str = Query("test_user"),
 ):
     return await tenders.change_tender_status_by_id(db, tenderId, username, status)
@@ -63,7 +64,7 @@ async def change_tender_status(
 )
 async def edit_tender(
     tender: TenderUpdate,
-    tenderId: str = Path(...),
+    tenderId: UUID = Path(...),
     username: str = Query(...),
     db: AsyncSession = Depends(get_session),
 ):
@@ -76,7 +77,7 @@ async def edit_tender(
     response_model=TenderResponse,
 )
 async def rollback(
-    tenderId: str = Path(...),
+    tenderId: UUID = Path(...),
     version: int = Path(...),
     username: str = Query(...),
     db: AsyncSession = Depends(get_session),

@@ -15,21 +15,33 @@ engine = create_async_engine(
 
 session_maker = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
+def gen_organization(fake: Faker) -> Organization:
+    organization = Organization(
+            name=fake.company(),
+            description=fake.text(100),
+            type=random.choice(["IE", "LLC", "JSC"]),
+        )
+    return organization
+
+def gen_employee(fake: Faker) -> Employee:
+    employee = Employee(
+            username=fake.user_name(),
+            first_name=fake.first_name(),
+            last_name=fake.last_name(),
+        )
+    return employee
+
 
 async def fill_employee_organizations():
     fake = Faker()
+    organization = gen_organization(fake)
     async with session_maker() as session:
-        for _ in range(100):
-            employee = Employee(
-                username=fake.user_name(),
-                first_name=fake.first_name(),
-                last_name=fake.last_name(),
-            )
-            organization = Organization(
-                name=fake.company(),
-                description=fake.text(100),
-                type=random.choice(["IE", "LLC", "JSC"]),
-            )
+        for i in range(100):
+            employee = gen_employee(fake)
+
+            if i % 3 != 0:
+                organization = gen_organization(fake)           
+
             session.add(employee)
             session.add(organization)
             await session.commit()

@@ -23,7 +23,7 @@ async def get_tenders(
     return await tenders.get_tender_list(db, limit, offset, service_type)
 
 
-@tender_router.post("/new", status_code=status.HTTP_200_OK, response_model=TenderCreate)
+@tender_router.post("/new", status_code=status.HTTP_200_OK, response_model=TenderResponse)
 async def create_tender(tender: TenderCreate, db: AsyncSession = Depends(get_session)):
     return await tenders.create_tender(db, tender)
 

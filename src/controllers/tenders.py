@@ -26,15 +26,15 @@ async def create_tender_history(session: AsyncSession, new_tender: Tender):
         organization_id=new_tender.organization_id,
     )
     session.add(new_tender_history)
-    # try:
-    await session.commit()
-    await session.refresh(new_tender_history)
-    # except IntegrityError:
-    # await session.rollback()
-    # raise HTTPException(
-    # status_code=status.HTTP_400_BAD_REQUEST,
-    # detail="Error while writing tender in history"
-    # )
+    try:
+        await session.commit()
+        await session.refresh(new_tender_history)
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Error while writing tender in history"
+        )
     return new_tender_history
 
 
@@ -72,6 +72,17 @@ async def get_tender(session: AsyncSession, tender_id: int) -> Tender:
     query = select(Tender).filter(Tender.id == tender_id)
     result = await session.execute(query)
     return result.scalars().first()
+
+async def check_if_user_in_organization(session: AsyncSession, username: str, tender: Tender):
+    org_query = (
+        select(Employee)
+        .join(OrganizationResponsible, Employee.id == OrganizationResponsible.user_id)
+        .where(Employee.username == username)
+        .where(OrganizationResponsible.organization_id == tender.organization_id)
+    )
+    user_in_org = await session.execute(org_query)
+    user = user_in_org.scalars().first()
+    return user
 
 
 async def get_tenders_by_user(
@@ -112,19 +123,11 @@ async def get_tender_by_id(
         raise HTTPException(status_code=403, detail="Access denied")
 
     # Проверяем, связан ли пользователь с организацией
-    org_query = (
-        select(Employee)
-        .join(OrganizationResponsible, Employee.id == OrganizationResponsible.user_id)
-        .where(Employee.username == username)
-        .where(OrganizationResponsible.organization_id == tender.organization_id)
-    )
-    user_in_org = await session.execute(org_query)
-    user = user_in_org.scalars().first()
+    user = check_if_user_in_organization(session, username, tender)
 
-    if user:
-        return tender
-    else:
+    if user is None:
         raise HTTPException(status_code=403, detail="Access denied")
+    return tender
 
 
 async def change_tender_status_by_id(
@@ -141,30 +144,23 @@ async def change_tender_status_by_id(
         raise HTTPException(status_code=403, detail="Username not specified")
 
     # Проверяем, связан ли пользователь с организацией
-    org_query = (
-        select(Employee)
-        .join(OrganizationResponsible, Employee.id == OrganizationResponsible.user_id)
-        .where(Employee.username == username)
-        .where(OrganizationResponsible.organization_id == tender.organization_id)
-    )
-    user_in_org = await session.execute(org_query)
-    user = user_in_org.scalars().first()
+    user = check_if_user_in_organization(session, username, tender)
 
-    if user:
-        tender.status = new_status
-        try:
-            await session.commit()
-            await session.refresh(tender)
-            return tender
-        except IntegrityError:
-            await session.rollback()
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Error changing tender status",
-            )
-
-    else:
+    if not user:
         raise HTTPException(status_code=403, detail="Access denied")
+
+    tender.status = new_status
+    try:
+        await session.commit()
+        await session.refresh(tender)
+        return tender
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Error changing tender status",
+        )
+
 
 
 async def edit_tender(
@@ -181,39 +177,37 @@ async def edit_tender(
         raise HTTPException(status_code=403, detail="Username not specified")
 
     # Проверяем, связан ли пользователь с организацией
-    org_query = (
-        select(Employee)
-        .join(OrganizationResponsible, Employee.id == OrganizationResponsible.user_id)
-        .where(Employee.username == username)
-        .where(OrganizationResponsible.organization_id == tender.organization_id)
-    )
-    user_in_org = await session.execute(org_query)
-    user = user_in_org.scalars().first()
+    user = check_if_user_in_organization(session, username, tender)
 
-    if user:
-        for key, val in tender_update.model_dump(exclude_unset=True).items():
-            setattr(tender, key, val)
-        tender.version += 1
-        try:
-            await session.commit()
-            await session.refresh(tender)
-        except IntegrityError:
-            await session.rollback()
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Error changing tender status",
-            )
-
-        await create_tender_history(session, tender)
-        return tender
-    else:
+    if not user:
         raise HTTPException(status_code=403, detail="Access denied")
+    
+    for key, val in tender_update.model_dump(exclude_unset=True).items():
+        setattr(tender, key, val)
+    tender.version += 1
+    try:
+        await session.commit()
+        await session.refresh(tender)
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Error changing tender status",
+        )
+
+    await create_tender_history(session, tender)
+    return tender
+
 
 
 async def rollback(session: AsyncSession, tender_id: UUID, version: int, username: str):
     tender = await get_tender_by_id(session, tender_id, username)
     if not tender:
         raise HTTPException(status_code=404, detail="Tender not found")
+    
+    user = check_if_user_in_organization(session, username, tender)
+    if not user:
+        raise HTTPException(status_code=403, detail="Access denied")
 
     history_stmt = select(TenderHistory).filter_by(tender_id=tender_id, version=version)
     history_result = await session.execute(history_stmt)

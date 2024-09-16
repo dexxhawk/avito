@@ -33,7 +33,7 @@ async def create_tender_history(session: AsyncSession, new_tender: Tender):
         await session.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Error while writing tender in history"
+            detail="Error while writing tender in history",
         )
     return new_tender_history
 
@@ -68,7 +68,9 @@ async def get_tender_list(
     return result.scalars().all()
 
 
-async def check_if_user_in_organization(session: AsyncSession, username: str, tender: Tender):
+async def check_if_user_in_organization(
+    session: AsyncSession, username: str, tender: Tender
+):
     org_query = (
         select(Employee)
         .join(OrganizationResponsible, Employee.id == OrganizationResponsible.user_id)
@@ -157,7 +159,6 @@ async def change_tender_status_by_id(
         )
 
 
-
 async def edit_tender(
     session: AsyncSession, tender_update: TenderUpdate, tender_id: UUID, username: str
 ):
@@ -176,7 +177,7 @@ async def edit_tender(
 
     if not user:
         raise HTTPException(status_code=403, detail="Access denied")
-    
+
     for key, val in tender_update.model_dump(exclude_unset=True).items():
         setattr(tender, key, val)
     tender.version += 1
@@ -194,12 +195,11 @@ async def edit_tender(
     return tender
 
 
-
 async def rollback(session: AsyncSession, tender_id: UUID, version: int, username: str):
     tender = await get_tender_by_id(session, tender_id, username)
     if not tender:
         raise HTTPException(status_code=404, detail="Tender not found")
-    
+
     user = await check_if_user_in_organization(session, username, tender)
     if not user:
         raise HTTPException(status_code=403, detail="Access denied")

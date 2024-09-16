@@ -13,10 +13,7 @@ class TenderBase(BaseModel):
     service_type: TenderServiceType
     status: TenderStatus
 
-    model_config = ConfigDict(
-        alias_generator=to_camel,
-        populate_by_name=True
-    )
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
 
 class TenderCreate(TenderBase):
@@ -29,15 +26,12 @@ class TenderUpdate(BaseModel):
     description: str | None = Field(None, max_length=500)
     service_type: TenderServiceType | None = Query(None)
 
-    model_config = ConfigDict(
-        alias_generator=to_camel,
-        populate_by_name=True
-    )
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
 
 class TenderResponse(TenderBase):
     id: UUID
-    version: conint(ge=1) # type: ignore
+    version: conint(ge=1)  # type: ignore
     created_at: datetime.datetime
 
     # class Config:

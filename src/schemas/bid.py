@@ -10,10 +10,8 @@ class BidBase(BaseModel):
     description: str = Field(..., max_length=500)
     # status: BidStatus
 
-    model_config = ConfigDict(
-        alias_generator=to_camel,
-        populate_by_name=True
-    )
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
 
 class BidCreate(BidBase):
     tender_id: UUID
@@ -33,12 +31,10 @@ class BidResponse(BidBase):
     author_type: BidAuthorType
     author_id: UUID
     version: int
-    created_at: datetime.datetime 
+    created_at: datetime.datetime
 
     model_config = ConfigDict(
-        alias_generator=to_camel,
-        populate_by_name=True,
-        from_attributes=False
+        alias_generator=to_camel, populate_by_name=True, from_attributes=False
     )
 
 

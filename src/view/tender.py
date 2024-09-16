@@ -23,7 +23,9 @@ async def get_tenders(
     return await tenders.get_tender_list(db, limit, offset, service_type)
 
 
-@tender_router.post("/new", status_code=status.HTTP_200_OK, response_model=TenderResponse)
+@tender_router.post(
+    "/new", status_code=status.HTTP_200_OK, response_model=TenderResponse
+)
 async def create_tender(tender: TenderCreate, db: AsyncSession = Depends(get_session)):
     return await tenders.create_tender(db, tender)
 
@@ -32,12 +34,17 @@ async def create_tender(tender: TenderCreate, db: AsyncSession = Depends(get_ses
     "/my", status_code=status.HTTP_200_OK, response_model=List[TenderResponse]
 )
 async def get_user_tenders(
-    limit: int | None = Query(None, ge=0), offset: int | None = Query(None, ge=0), username: str | None = Query(None), db: AsyncSession = Depends(get_session)
+    limit: int | None = Query(None, ge=0),
+    offset: int | None = Query(None, ge=0),
+    username: str | None = Query(None),
+    db: AsyncSession = Depends(get_session),
 ):
     return await tenders.get_tenders_by_user(db, limit, offset, username)
 
 
-@tender_router.get("/{tenderId}/status", status_code=status.HTTP_200_OK, response_model=TenderStatus)
+@tender_router.get(
+    "/{tenderId}/status", status_code=status.HTTP_200_OK, response_model=TenderStatus
+)
 async def get_tender_status(
     db: AsyncSession = Depends(get_session),
     tenderId: UUID = Path(...),

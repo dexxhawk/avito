@@ -15,7 +15,7 @@ from src.db.models.models import (
     OrganizationResponsible,
     Tender,
 )
-from src.schemas.bid import BidCreate, BidUpdate
+from src.schemas.bid import BidCreate, BidResponse, BidUpdate
 from src.schemas.enums import BidDecision
 
 
@@ -43,7 +43,7 @@ async def create_bid_history(session: AsyncSession, new_bid: Bid):
     return new_bid_history
 
 
-async def create_bid(session: AsyncSession, bid: BidCreate) -> BidCreate:
+async def create_bid(session: AsyncSession, bid: BidCreate) -> BidResponse:
     new_bid = Bid(**bid.model_dump())
     session.add(new_bid)
 

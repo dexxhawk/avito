@@ -8,7 +8,7 @@ from src.schemas.enums import BidAuthorType, BidStatus
 class BidBase(BaseModel):
     name: str = Field(..., max_length=100)
     description: str = Field(..., max_length=500)
-    status: BidStatus
+    # status: BidStatus
 
     model_config = ConfigDict(
         alias_generator=to_camel,
@@ -17,8 +17,8 @@ class BidBase(BaseModel):
 
 class BidCreate(BidBase):
     tender_id: UUID
-    organization_id: UUID
-    creator_username: str
+    author_type: BidAuthorType
+    author_id: UUID
 
 
 class BidUpdate(BaseModel):

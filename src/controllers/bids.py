@@ -4,6 +4,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import join, select
+from src.controllers.tenders import get_tender_by_id
 from src.schemas.enums import BidDecision, BidStatus
 from src.db.models.models import (
     Bid,
@@ -45,6 +46,9 @@ async def create_bid_history(session: AsyncSession, new_bid: Bid):
 async def create_bid(session: AsyncSession, bid: BidCreate) -> BidCreate:
     new_bid = Bid(**bid.model_dump())
     session.add(new_bid)
+
+    await get_tender_by_id(session, bid.tender_id, bid.creator_username)
+
     try:
         await session.commit()
         await session.refresh(new_bid)
@@ -52,7 +56,7 @@ async def create_bid(session: AsyncSession, bid: BidCreate) -> BidCreate:
         await session.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Не удалось создать данное предложение",
+            detail="Wrong Tender Id",
         )
     await create_bid_history(session, new_bid)
     return new_bid
@@ -77,7 +81,13 @@ async def get_bids_by_user(
         .offset(offset)
     )
 
-    result = await session.execute(query)
+    try:
+        result = await session.execute(query)
+    except IntegrityError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Wrong username",
+        )
     bids = result.scalars().all()
 
     return bids

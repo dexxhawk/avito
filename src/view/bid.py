@@ -1,6 +1,7 @@
 from uuid import UUID
 from fastapi import APIRouter, Path, Query, status, Depends
 from typing import List
+from src.schemas.review import FeedbackResponse
 from src.schemas.enums import BidDecision, BidStatus
 from src.db.connection.session import get_session
 from src.schemas.bid import BidCreate, BidResponse, BidUpdate
@@ -11,12 +12,12 @@ from src.controllers import bids
 bid_router = APIRouter(prefix="/bids", tags=["bids"])
 
 
-@bid_router.post("/new", status_code=status.HTTP_200_OK)
+@bid_router.post("/new", status_code=status.HTTP_200_OK, response_model=BidResponse)
 async def create_bid(bid: BidCreate, db: AsyncSession = Depends(get_session)):
     return await bids.create_bid(db, bid)
 
 
-@bid_router.get("/my", status_code=status.HTTP_200_OK)
+@bid_router.get("/my", status_code=status.HTTP_200_OK, response_model=List[BidResponse])
 async def get_user_bids(
     limit: int | None = Query(None, ge=0),
     offset: int | None = Query(None, ge=0),
@@ -29,6 +30,7 @@ async def get_user_bids(
 @bid_router.get(
     "/{tenderId}/list",
     status_code=status.HTTP_200_OK,
+    response_model=List[BidResponse]
 )
 async def get_bids_by_tender(
     tenderId: UUID = Path(...),
@@ -40,7 +42,7 @@ async def get_bids_by_tender(
     return await bids.get_bids_by_tender(db, tenderId, username, limit, offset)
 
 
-@bid_router.get("/{bidId}/status", status_code=status.HTTP_200_OK)
+@bid_router.get("/{bidId}/status", status_code=status.HTTP_200_OK, response_model=BidStatus)
 async def get_bid_status(
     db: AsyncSession = Depends(get_session),
     bidId: UUID = Path(...),
@@ -51,7 +53,7 @@ async def get_bid_status(
 
 
 @bid_router.put(
-    "/{bidId}/status", status_code=status.HTTP_200_OK
+    "/{bidId}/status", status_code=status.HTTP_200_OK, response_model=BidResponse
 )
 async def change_bid_status(
     status: BidStatus,
@@ -64,7 +66,7 @@ async def change_bid_status(
 
 
 @bid_router.patch(
-    "/{bidId}/edit", status_code=status.HTTP_200_OK
+    "/{bidId}/edit", status_code=status.HTTP_200_OK, response_model=BidResponse
 )
 async def edit_bid(
     bid: BidUpdate,
@@ -115,7 +117,7 @@ async def rollback(
     return await bids.rollback(db, bidId, version, username)
 
 
-@bid_router.get("/{tenderId}/reviews", status_code=status.HTTP_200_OK)
+@bid_router.get("/{tenderId}/reviews", status_code=status.HTTP_200_OK, response_model=FeedbackResponse)
 async def get_revies(
     tenderId: UUID = Path(...),
     authorUsername: str = Query(...),

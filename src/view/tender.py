@@ -15,8 +15,8 @@ tender_router = APIRouter(prefix="/tenders", tags=["tender"])
     "/", status_code=status.HTTP_200_OK, response_model=List[TenderResponse]
 )
 async def get_tenders(
-    limit: int | None = Query(None),
-    offset: int | None = Query(None),
+    limit: int | None = Query(None, ge=0),
+    offset: int | None = Query(None, ge=0),
     service_type: List[TenderServiceType] | None = Query(None),
     db: AsyncSession = Depends(get_session),
 ):
@@ -32,7 +32,7 @@ async def create_tender(tender: TenderCreate, db: AsyncSession = Depends(get_ses
     "/my", status_code=status.HTTP_200_OK, response_model=List[TenderResponse]
 )
 async def get_user_tenders(
-    limit: int | None = Query(None), offset: int | None = Query(None), username: str | None = Query(None), db: AsyncSession = Depends(get_session)
+    limit: int | None = Query(None, ge=0), offset: int | None = Query(None, ge=0), username: str | None = Query(None), db: AsyncSession = Depends(get_session)
 ):
     return await tenders.get_tenders_by_user(db, limit, offset, username)
 

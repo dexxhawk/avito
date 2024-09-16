@@ -18,8 +18,8 @@ async def create_bid(bid: BidCreate, db: AsyncSession = Depends(get_session)):
 
 @bid_router.get("/my", status_code=status.HTTP_200_OK)
 async def get_user_bids(
-    limit: int | None = Query(None),
-    offset: int | None = Query(None),
+    limit: int | None = Query(None, ge=0),
+    offset: int | None = Query(None, ge=0),
     username: str = Query(None),
     db: AsyncSession = Depends(get_session),
 ):
@@ -33,8 +33,8 @@ async def get_user_bids(
 async def get_bids_by_tender(
     tenderId: UUID = Path(...),
     username: str = Query(...),
-    limit: int | None = Query(None),
-    offset: int | None = Query(None),
+    limit: int | None = Query(None, ge=0),
+    offset: int | None = Query(None, ge=0),
     db: AsyncSession = Depends(get_session),
 ):
     return await bids.get_bids_by_tender(db, tenderId, username, limit, offset)
@@ -120,8 +120,8 @@ async def get_revies(
     tenderId: UUID = Path(...),
     authorUsername: str = Query(...),
     requestUsername: str = Query(...),
-    limit: int = Query(None),
-    offset: int = Query(None),
+    limit: int = Query(None, ge=0),
+    offset: int = Query(None, ge=0),
     db: AsyncSession = Depends(get_session),
 ):
     return await bids.get_reviews(

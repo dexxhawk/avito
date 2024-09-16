@@ -4,7 +4,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import join, select
-from schema import BidDecision
+from src.schemas.enums import BidDecision, BidStatus
 from src.db.models.models import (
     Bid,
     BidHistory,
@@ -117,7 +117,7 @@ async def get_bid_by_id(session: AsyncSession, bid_id: UUID, username: str):
 
 
 async def change_bid_status(
-    session: AsyncSession, bid_id: UUID, new_status: str, username: str
+    session: AsyncSession, bid_id: UUID, new_status: BidStatus, username: str
 ):
     bid = await get_bid_by_id(session, bid_id, username)
 
